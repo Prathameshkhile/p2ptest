@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import socket from "../socket";
+import { io } from "socket.io-client";
+
+const socket = io("https://p2ptest-f04t.onrender.com"); // your backend URL
 
 const FileTransfer = () => {
   const [roomId, setRoomId] = useState("");
@@ -12,12 +14,12 @@ const FileTransfer = () => {
   const dataChannelRef = useRef(null);
   const receivedChunksRef = useRef([]);
 
-  // ✅ STUN + TURN (for cross-network support)
+  // ✅ TURN + STUN for cross-network
   const iceConfig = {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" }, // Free public STUN
+      { urls: "stun:stun.l.google.com:19302" },
       {
-        urls: "turn:test.sgf.surf:3478", // Working public TURN (as of 2025)
+        urls: "turn:test.sgf.surf:3478",
         username: "public",
         credential: "public",
       },
@@ -163,10 +165,10 @@ const FileTransfer = () => {
   }, [roomId]);
 
   return (
-    <div>
-      <h2>🗂️ P2P File Transfer</h2>
+    <div style={{ padding: "20px" }}>
+      <h2>🛰️ P2P File Transfer</h2>
       <input
-        placeholder="Room ID"
+        placeholder="Enter Room ID"
         value={roomId}
         onChange={(e) => setRoomId(e.target.value)}
       />
@@ -181,7 +183,7 @@ const FileTransfer = () => {
         <div>
           <p>✅ File received: {receivedFileName}</p>
           <a href={downloadUrl} download={receivedFileName}>
-            Download
+            Download File
           </a>
           {receivedFileType?.startsWith("image/") && (
             <img
