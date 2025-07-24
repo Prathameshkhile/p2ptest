@@ -15,11 +15,11 @@ const FileTransfer = () => {
   // ✅ STUN + TURN (for cross-network support)
   const iceConfig = {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun.l.google.com:19302" }, // Free public STUN
       {
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject",
+        urls: "turn:test.sgf.surf:3478", // Working public TURN (as of 2025)
+        username: "public",
+        credential: "public",
       },
     ],
   };
