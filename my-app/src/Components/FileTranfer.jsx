@@ -12,12 +12,18 @@ const FileTransfer = () => {
   const dataChannelRef = useRef(null);
   const receivedChunksRef = useRef([]);
 
-  // ICE config
+  // ✅ STUN + TURN (for cross-network support)
   const iceConfig = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:openrelay.metered.ca:80",
+        username: "openrelayproject",
+        credential: "openrelayproject",
+      },
+    ],
   };
 
-  // Create peer
   const createPeer = (initiator) => {
     peerRef.current = new RTCPeerConnection(iceConfig);
 
@@ -45,7 +51,6 @@ const FileTransfer = () => {
     };
   };
 
-  // Setup data channel
   const setupDataChannel = () => {
     dataChannelRef.current.binaryType = "arraybuffer";
 
@@ -69,7 +74,6 @@ const FileTransfer = () => {
     };
   };
 
-  // Handle file send
   const sendFile = () => {
     if (
       !file ||
@@ -104,14 +108,12 @@ const FileTransfer = () => {
     readSlice(0);
   };
 
-  // Join room
   const handleJoin = async () => {
     console.log("Joining room:", roomId);
     createPeer(true);
     socket.emit("join", roomId);
   };
 
-  // Handle socket events
   useEffect(() => {
     socket.on("connect", () => {
       console.log("✅ Connected to server", socket.id);
@@ -162,7 +164,7 @@ const FileTransfer = () => {
 
   return (
     <div>
-      <h2>P2P File Transfer</h2>
+      <h2>🗂️ P2P File Transfer</h2>
       <input
         placeholder="Room ID"
         value={roomId}
