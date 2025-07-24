@@ -5,20 +5,14 @@ const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
-
-// Allow CORS for client hosted elsewhere
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "*", // Allow any origin for dev (you can restrict later)
     methods: ["GET", "POST"],
   },
 });
 
 app.use(cors());
-
-app.get("/", (req, res) => {
-  res.send("🔌 Socket.io server is live");
-});
 
 io.on("connection", (socket) => {
   console.log("🟢 Client connected:", socket.id);
@@ -31,19 +25,23 @@ io.on("connection", (socket) => {
     socket.join(roomId);
 
     if (numberOfClients > 0) {
+      console.log("🔁 Sending 'other-user' to:", socket.id);
       socket.to(roomId).emit("other-user");
     }
   });
 
   socket.on("offer", ({ offer, roomId }) => {
+    console.log("📨 Offer received from:", socket.id);
     socket.to(roomId).emit("offer", { offer });
   });
 
   socket.on("answer", ({ answer, roomId }) => {
+    console.log("📨 Answer received from:", socket.id);
     socket.to(roomId).emit("answer", { answer });
   });
 
   socket.on("ice-candidate", ({ candidate, roomId }) => {
+    console.log("📡 ICE candidate from:", socket.id);
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
@@ -52,7 +50,6 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Socket.io server running at http://localhost:${PORT}`);
+server.listen(5000, () => {
+  console.log("🚀 Socket.io server listening on http://localhost:5000");
 });
