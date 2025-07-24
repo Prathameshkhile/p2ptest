@@ -27,10 +27,22 @@ const FileTransfer = () => {
   };
 
   const createPeer = (initiator) => {
-    peerRef.current = new RTCPeerConnection(iceConfig);
+    peerRef.current = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        {
+          urls: "turn:relay1.expressturn.com:3478",
+          username: "efk4k57ZzYVZ9WD5bq6kJz9zvZ5Z2g2f",
+          credential: "5V9XEdYbyN3jZyZd",
+        },
+      ],
+      iceTransportPolicy: "relay", // or "relay" to force TURN only for stricter networks
+    });
 
+    // ✅ ICE candidate handler
     peerRef.current.onicecandidate = (e) => {
       if (e.candidate) {
+        console.log("🔁 Sending ICE candidate");
         socket.emit("ice-candidate", {
           candidate: e.candidate,
           roomId,
@@ -38,19 +50,35 @@ const FileTransfer = () => {
       }
     };
 
+    // ✅ ICE gathering state (debugging)
+    peerRef.current.onicegatheringstatechange = () => {
+      console.log("ICE Gathering State:", peerRef.current.iceGatheringState);
+    };
+
+    // ✅ Connection state
+    peerRef.current.onconnectionstatechange = () => {
+      console.log("📡 Connection state:", peerRef.current.connectionState);
+
+      if (peerRef.current.connectionState === "failed") {
+        console.warn("🚫 Connection failed.");
+        // optionally retry or alert user
+      } else if (peerRef.current.connectionState === "connected") {
+        console.log("✅ Peer connected!");
+      }
+    };
+
+    // ✅ Setup data channel
     if (initiator) {
+      console.log("📦 Creating data channel...");
       dataChannelRef.current = peerRef.current.createDataChannel("file");
       setupDataChannel();
     } else {
       peerRef.current.ondatachannel = (event) => {
+        console.log("📩 Data channel received");
         dataChannelRef.current = event.channel;
         setupDataChannel();
       };
     }
-
-    peerRef.current.onconnectionstatechange = () => {
-      console.log("Connection state:", peerRef.current.connectionState);
-    };
   };
 
   const setupDataChannel = () => {
