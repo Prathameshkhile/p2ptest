@@ -19,9 +19,9 @@ const FileTransfer = () => {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
       {
-        urls: "turn:test.sgf.surf:3478",
-        username: "public",
-        credential: "public",
+        urls: "turn:relay1.expressturn.com:3478",
+        username: "efk4k57ZzYVZ9WD5bq6kJz9zvZ5Z2g2f",
+        credential: "5V9XEdYbyN3jZyZd",
       },
     ],
   };
