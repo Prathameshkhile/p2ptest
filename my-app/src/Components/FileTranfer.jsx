@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
-
-const socket = io("https://p2ptest-f04t.onrender.com"); // your backend URL
+import socket from "../socket";
 
 const FileTransfer = () => {
   const [roomId, setRoomId] = useState("");
@@ -14,35 +12,17 @@ const FileTransfer = () => {
   const dataChannelRef = useRef(null);
   const receivedChunksRef = useRef([]);
 
-  // ✅ TURN + STUN for cross-network
+  // ICE config
   const iceConfig = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      {
-        urls: "turn:relay1.expressturn.com:3478",
-        username: "efk4k57ZzYVZ9WD5bq6kJz9zvZ5Z2g2f",
-        credential: "5V9XEdYbyN3jZyZd",
-      },
-    ],
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   };
 
+  // Create peer
   const createPeer = (initiator) => {
-    peerRef.current = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-          urls: "turn:relay1.expressturn.com:3478",
-          username: "efk4k57ZzYVZ9WD5bq6kJz9zvZ5Z2g2f",
-          credential: "5V9XEdYbyN3jZyZd",
-        },
-      ],
-      iceTransportPolicy: "relay", // or "relay" to force TURN only for stricter networks
-    });
+    peerRef.current = new RTCPeerConnection(iceConfig);
 
-    // ✅ ICE candidate handler
     peerRef.current.onicecandidate = (e) => {
       if (e.candidate) {
-        console.log("🔁 Sending ICE candidate");
         socket.emit("ice-candidate", {
           candidate: e.candidate,
           roomId,
@@ -50,37 +30,22 @@ const FileTransfer = () => {
       }
     };
 
-    // ✅ ICE gathering state (debugging)
-    peerRef.current.onicegatheringstatechange = () => {
-      console.log("ICE Gathering State:", peerRef.current.iceGatheringState);
-    };
-
-    // ✅ Connection state
-    peerRef.current.onconnectionstatechange = () => {
-      console.log("📡 Connection state:", peerRef.current.connectionState);
-
-      if (peerRef.current.connectionState === "failed") {
-        console.warn("🚫 Connection failed.");
-        // optionally retry or alert user
-      } else if (peerRef.current.connectionState === "connected") {
-        console.log("✅ Peer connected!");
-      }
-    };
-
-    // ✅ Setup data channel
     if (initiator) {
-      console.log("📦 Creating data channel...");
       dataChannelRef.current = peerRef.current.createDataChannel("file");
       setupDataChannel();
     } else {
       peerRef.current.ondatachannel = (event) => {
-        console.log("📩 Data channel received");
         dataChannelRef.current = event.channel;
         setupDataChannel();
       };
     }
+
+    peerRef.current.onconnectionstatechange = () => {
+      console.log("Connection state:", peerRef.current.connectionState);
+    };
   };
 
+  // Setup data channel
   const setupDataChannel = () => {
     dataChannelRef.current.binaryType = "arraybuffer";
 
@@ -104,6 +69,7 @@ const FileTransfer = () => {
     };
   };
 
+  // Handle file send
   const sendFile = () => {
     if (
       !file ||
@@ -138,12 +104,14 @@ const FileTransfer = () => {
     readSlice(0);
   };
 
+  // Join room
   const handleJoin = async () => {
     console.log("Joining room:", roomId);
     createPeer(true);
     socket.emit("join", roomId);
   };
 
+  // Handle socket events
   useEffect(() => {
     socket.on("connect", () => {
       console.log("✅ Connected to server", socket.id);
@@ -193,10 +161,10 @@ const FileTransfer = () => {
   }, [roomId]);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>🛰️ P2P File Transfer</h2>
+    <div>
+      <h2>P2P File Transfer</h2>
       <input
-        placeholder="Enter Room ID"
+        placeholder="Room ID"
         value={roomId}
         onChange={(e) => setRoomId(e.target.value)}
       />
@@ -211,7 +179,7 @@ const FileTransfer = () => {
         <div>
           <p>✅ File received: {receivedFileName}</p>
           <a href={downloadUrl} download={receivedFileName}>
-            Download File
+            Download
           </a>
           {receivedFileType?.startsWith("image/") && (
             <img
